@@ -22,21 +22,21 @@ jobs:
 
       - name: descargar data
         run: |
-          curl -sL "https://companiesmarketcap.com/clothing/largest-clothing-companies-by-market-cap/?download=csv" -o from-url-all.csv
-          if [ ! -s from-url-all.csv ]; then
+          curl -sL "https://companiesmarketcap.com/pharmaceuticals/largest-pharmaceutical-companies-by-market-cap/?download=csv" -o companies-pharma.csv
+          if [ ! -s companies-pharma.csv ]; then
             echo "Downloaded CSV file is empty"
             exit 1
           fi
 
       - name: crear tabla input
         run: |
-          cat from-url-all.csv > companies-all.csv
+          cat companies-pharma.csv > companies-pharma.csv
 
       - name: crear tablas por pais
         run: |
-          grep -i Germany companies-all.csv  > companies_germany.csv
-          grep -i Kingdom companies-all.csv  > companies_united_kingdom.csv
-          grep -i France companies-all.csv  > companies_france.csv
+          grep -i Germany companies-pharma.csv  > companies_germany.csv
+          grep -i Kingdom companies-pharma.csv  > companies_united_kingdom.csv
+          grep -i France companies-pharma.csv  > companies_france.csv
           
       - name: Commit results
         if: always()
