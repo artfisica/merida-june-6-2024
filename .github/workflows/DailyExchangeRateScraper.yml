@@ -31,14 +31,19 @@ jobs:
           # Store the website content in a variable.
           PAGE_CONTENT=$(curl -s -k "https://www.bcv.org.ve/")
 
-          # Extract USD and EUR rates. The pipeline finds the currency, gets the next few lines,
-          # isolates the one with the rate, and cleans it to get only the number.
-          USD_RATE=$(echo "$PAGE_CONTENT" | grep -A 2 "USD" | tail -n 1 | sed 's/[^0-9,]*//g')
-          EUR_RATE=$(echo "$PAGE_CONTENT" | grep -A 2 "EUR" | tail -n 1 | sed 's/[^0-9,]*//g')
+          # Extract USD and EUR rates by looking for a specific numeric pattern within the
+          # divs with id="dolar" and id="euro". This is more reliable than line-based parsing.
+          # The regex matches the format NNN,NNNNNNNN used by BCV.
+          USD_RATE=$(echo "$PAGE_CONTENT" | grep -A 4 'id="dolar"' | grep -o '[0-9]\{1,3\},[0-9]\{8\}')
+          EUR_RATE=$(echo "$PAGE_CONTENT" | grep -A 4 'id="euro"' | grep -o '[0-9]\{1,3\},[0-9]\{8\}')
           
           # Check if the rates were successfully extracted. If not, exit with an error.
           if [ -z "$USD_RATE" ] || [ -z "$EUR_RATE" ]; then
-            echo "Error: Could not extract exchange rates. The website structure may have changed."
+            echo "Error: Could not extract exchange rates. The website structure or rate format may have changed."
+            # For debugging, print the page content if extraction fails
+            echo "--- Page Content Start ---"
+            echo "$PAGE_CONTENT"
+            echo "--- Page Content End ---"
             exit 1
           fi
           
@@ -76,3 +81,4 @@ jobs:
           else
             echo "No changes to commit."
           fi
+
