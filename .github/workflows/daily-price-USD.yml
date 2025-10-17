@@ -17,8 +17,8 @@ jobs:
 
       - name: descargar data
         run: |
-          curl "https://bcv.org.ve" | grep -10 "USD" | grep "000" | sed 's|strong>|\n|g'  | grep "</" | grep -v div | sed 's|</|VES|g'
-          curl "https://bcv.org.ve" | grep -10 "USD" | grep "000" | sed 's|strong>|\n|g'  | grep "</" | grep -v div | sed 's|</|VES|g' > price-now.csv
+          curl "https://www.bcv.org.ve/" | grep -10 "USD" | grep "000" | sed 's|strong>|\n|g'  | grep "</" | grep -v div | sed 's|</|VES|g'
+          curl "https://www.bcv.org.ve/" | grep -10 "USD" | grep "000" | sed 's|strong>|\n|g'  | grep "</" | grep -v div | sed 's|</|VES|g' > price-now.csv
           if [ ! -s price-now.csv ]; then
             echo "Downloaded CSV file is empty"
             exit 1
