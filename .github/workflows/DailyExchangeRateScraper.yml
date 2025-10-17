@@ -1,0 +1,78 @@
+# This workflow scrapes daily exchange rates from the Central Bank of Venezuela (BCV)
+# and commits the updated data to a CSV file in the repository.
+
+name: 'Daily Exchange Rate Scraper'
+
+on:
+  # Runs every day at 22:00 UTC (6:00 PM VET)
+  schedule:
+    - cron: '00 22 * * *'
+  # Allows you to run this workflow manually from the Actions tab
+  workflow_dispatch:
+
+jobs:
+  scrape-and-commit:
+    # This job requires write permissions to the repository contents to commit the CSV file
+    permissions:
+      contents: write
+
+    runs-on: ubuntu-latest
+
+    steps:
+      # Step 1: Check out the repository's code so the workflow can access it
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      # Step 2: Scrape the data, format it, and append it to the CSV file
+      - name: Scrape and Append Exchange Rates
+        run: |
+          echo "Fetching data from BCV website..."
+          # Use curl with -k to ignore SSL certificate issues and -s for silent mode.
+          # Store the website content in a variable.
+          PAGE_CONTENT=$(curl -s -k "https://www.bcv.org.ve/")
+
+          # Extract USD and EUR rates. The pipeline finds the currency, gets the next few lines,
+          # isolates the one with the rate, and cleans it to get only the number.
+          USD_RATE=$(echo "$PAGE_CONTENT" | grep -A 2 "USD" | tail -n 1 | sed 's/[^0-9,]*//g')
+          EUR_RATE=$(echo "$PAGE_CONTENT" | grep -A 2 "EUR" | tail -n 1 | sed 's/[^0-9,]*//g')
+          
+          # Check if the rates were successfully extracted. If not, exit with an error.
+          if [ -z "$USD_RATE" ] || [ -z "$EUR_RATE" ]; then
+            echo "Error: Could not extract exchange rates. The website structure may have changed."
+            exit 1
+          fi
+          
+          echo "Successfully extracted rates -> USD: $USD_RATE, EUR: $EUR_RATE"
+          
+          # Get the current date in UTC format (YYYY-MM-DD)
+          CURRENT_DATE=$(date -u +"%Y-%m-%d")
+          
+          # If the CSV file doesn't exist, create it with a header row.
+          if [ ! -f prices-rates.csv ]; then
+            echo "Creating new CSV file with headers."
+            echo "Date,USD,EUR" > prices-rates.csv
+          fi
+          
+          # Append the new data as a new line in the CSV file
+          echo "$CURRENT_DATE,$USD_RATE,$EUR_RATE" >> prices-rates.csv
+          echo "Appended new rates to prices-rates.csv"
+          cat prices-rates.csv
+
+      # Step 3: Commit the updated CSV file back to the repository
+      - name: Commit Updated Data
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          
+          # Add the CSV file to the staging area
+          git add prices-rates.csv
+          
+          # Check if there are any changes to commit.
+          # If there are, commit and push. Otherwise, do nothing.
+          if ! git diff --cached --quiet; then
+            echo "Changes detected. Committing and pushing..."
+            git commit -m "Update exchange rates for $(date -u +'%Y-%m-%d')"
+            git push
+          else
+            echo "No changes to commit."
+          fi
