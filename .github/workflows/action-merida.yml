@@ -52,7 +52,7 @@ jobs:
  
   viendo_eu: # nombre del job
     needs: analizando_datos # job(s) de los que depende
-    runs-on: macos # sistema operativo
+    runs-on: ubuntu-latest # sistema operativo
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
